@@ -1,6 +1,6 @@
 {
   "name": "nanoflight",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "keywords": [
     "inflight"
   ],
@@ -10,6 +10,9 @@
     "type": "git",
     "url": "git+https://github.com/gameroman-npm/nanoflight.git"
   },
+  "files": [
+    "dist"
+  ],
   "type": "module",
   "exports": {
     ".": "./dist/index.mjs",
