@@ -1,23 +1,17 @@
-type FetchMethod<K, T> = (key: K) => Promise<T>;
+export function createFetcher(max: number = 100) {
+  let num: number,
+    curr: Record<PropertyKey, unknown>,
+    prev: Record<PropertyKey, unknown> = Object.create(null);
 
-export function createFetcher<K extends PropertyKey = string, T = any>(
-  max: number = 100,
-) {
-  let num: number;
-  let curr: Record<K, T>;
-  let prev: Record<K, T>;
-  const limit = max || 1;
-
-  const reset = (isPartial?: boolean) => {
+  const reset = () => {
     num = 0;
     curr = Object.create(null);
-    if (!isPartial) prev = Object.create(null);
   };
 
-  const keep = (key: K, value: T) => {
-    if (++num > limit) {
+  const keep = (key: PropertyKey, value: unknown) => {
+    if (++num > (max || 1)) {
       prev = curr;
-      reset(true);
+      reset();
       ++num;
     }
     curr[key] = value;
@@ -25,23 +19,23 @@ export function createFetcher<K extends PropertyKey = string, T = any>(
 
   reset();
 
-  const inFlight = new Map<K, Promise<T>>();
+  const inFlight = new Map<PropertyKey, Promise<unknown>>();
 
-  return async function fetcher(
+  return function fetcher<K extends PropertyKey, T>(
     key: K,
-    fetchMethod: FetchMethod<K, T>,
+    fetchMethod: (key: K) => Promise<T>,
   ): Promise<T> {
     let val = curr[key];
-    if (val !== undefined) return val;
+    if (val !== undefined) return Promise.resolve(val as T);
 
     val = prev[key];
     if (val !== undefined) {
       keep(key, val);
-      return val;
+      return Promise.resolve(val as T);
     }
 
-    const existing = inFlight.get(key);
-    if (existing !== undefined) return existing;
+    const active = inFlight.get(key);
+    if (active) return active as Promise<T>;
 
     const work = (async () => {
       try {
